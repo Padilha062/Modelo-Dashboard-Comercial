@@ -124,6 +124,21 @@
   }
   .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
+  /* ── SUMMARY STRIP (moved to top) ── */
+  .footer-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px; margin-bottom: 28px;
+    animation: fadeUp 0.6s ease 0.05s both;
+  }
+  .metric-mini {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .metric-mini-icon { font-size: 22px; }
+  .metric-mini-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 3px; }
+  .metric-mini-value { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
+
   /* ── KPI STRIP ── */
   .kpi-strip {
     display: grid;
@@ -232,7 +247,7 @@
   /* ── BOTTOM GRID ── */
   .bottom-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 380px;
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
     animation: fadeUp 0.6s ease 0.3s both;
   }
@@ -276,38 +291,8 @@
   .tag-amber { background: var(--amber-dim); color: var(--amber); }
   .tag-rose { background: var(--rose-dim); color: var(--rose); }
 
-  /* ── LOSS BREAKDOWN ── */
-  .loss-list { display: flex; flex-direction: column; gap: 12px; }
-  .loss-item { display: flex; align-items: center; gap: 12px; }
-  .loss-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .loss-info { flex: 1; }
-  .loss-name { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
-  .loss-track { height: 4px; background: var(--bg-hover); border-radius: 2px; overflow: hidden; }
-  .loss-fill { height: 100%; border-radius: 2px; transition: width 1.2s ease; }
-  .loss-count { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--text-secondary); }
-
   /* ── CHART CONTAINER ── */
   .chart-wrap { position: relative; }
-
-  /* ── FOOTER ── */
-  .footer-strip {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 10px; margin-top: 20px;
-    animation: fadeUp 0.6s ease 0.4s both;
-  }
-  .metric-mini {
-    background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: 12px; padding: 16px 18px;
-    display: flex; align-items: center; gap: 14px;
-  }
-  .metric-mini-icon { font-size: 22px; }
-  .metric-mini-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 3px; }
-  .metric-mini-value { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
-
-  /* ── ANIMATIONS ── */
-  @keyframes slideDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
   /* ── TOOLTIP ── */
   .tooltip {
@@ -324,11 +309,16 @@
   ::-webkit-scrollbar-track { background: var(--bg-base); }
   ::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 3px; }
 
+  /* ── ANIMATIONS ── */
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 1200px) {
     .kpi-strip { grid-template-columns: repeat(3, 1fr); }
     .main-grid { grid-template-columns: 1fr; }
-    .bottom-grid { grid-template-columns: 1fr 1fr; }
+    .bottom-grid { grid-template-columns: 1fr; }
     .footer-strip { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
@@ -362,6 +352,10 @@
       </div>
     </div>
   </header>
+
+  <!-- SUMMARY METRICS (moved to top) -->
+  <div class="section-label">Métricas Resumo</div>
+  <div class="footer-strip" id="footerStrip"></div>
 
   <!-- KPI STRIP -->
   <div class="section-label">Indicadores Principais</div>
@@ -437,24 +431,7 @@
       </table>
     </div>
 
-    <!-- LOSS BREAKDOWN -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Análise de Perdas</div>
-          <div class="card-sub">Motivos e distribuição</div>
-        </div>
-        <span class="card-badge" style="background:var(--rose-dim);color:var(--rose);border-color:rgba(255,77,109,0.2)">⚠</span>
-      </div>
-      <div class="loss-list" id="lossList"></div>
-      <div style="margin-top:24px">
-        <canvas id="lossChart" height="160"></canvas>
-      </div>
-    </div>
   </div>
-
-  <!-- FOOTER METRICS -->
-  <div class="footer-strip" id="footerStrip"></div>
 
 </div>
 
@@ -583,7 +560,6 @@ let currentPeriod = 'mes';
 let currentChartType = 'bar';
 let consultantChart = null;
 let trendChart = null;
-let lossChart = null;
 
 /* ════════════════════════════════════════════
    KPI DEFINITIONS
@@ -718,36 +694,6 @@ function renderTable() {
       el.style.transition = 'width 1s ease';
     });
   }, 100);
-}
-
-/* ════════════════════════════════════════════
-   RENDER LOSS LIST
-════════════════════════════════════════════ */
-function renderLossList() {
-  const losses = DATA[currentPeriod].losses;
-  const total = losses.reduce((s,l) => s + l.count, 0);
-  const d = DATA[currentPeriod];
-  const totalKpi = d.kpis.perda.value;
-
-  const list = document.getElementById('lossList');
-  list.innerHTML = losses.map(l => {
-    const p = Math.round(l.count / total * 100);
-    return `<div class="loss-item">
-      <div class="loss-dot" style="background:${l.color}"></div>
-      <div class="loss-info">
-        <div class="loss-name">${l.label}</div>
-        <div class="loss-track"><div class="loss-fill" style="width:0%;background:${l.color}" data-w="${p}"></div></div>
-      </div>
-      <div class="loss-count">${l.count} <span style="font-size:10px;color:var(--text-muted)">(${p}%)</span></div>
-    </div>`;
-  }).join('');
-
-  setTimeout(() => {
-    list.querySelectorAll('.loss-fill').forEach(el => {
-      el.style.width = el.dataset.w + '%';
-      el.style.transition = 'width 1s ease';
-    });
-  }, 200);
 }
 
 /* ════════════════════════════════════════════
@@ -914,37 +860,6 @@ function renderTrendChart() {
 }
 
 /* ════════════════════════════════════════════
-   LOSS DONUT CHART
-════════════════════════════════════════════ */
-function renderLossChart() {
-  const ctx = document.getElementById('lossChart').getContext('2d');
-  const losses = DATA[currentPeriod].losses;
-  if (lossChart) lossChart.destroy();
-  lossChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: losses.map(l => l.label),
-      datasets: [{
-        data: losses.map(l => l.count),
-        backgroundColor: losses.map(l => l.color + 'bb'),
-        borderColor: losses.map(l => l.color),
-        borderWidth: 2,
-        hoverOffset: 6,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      cutout: '68%',
-      plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } },
-        tooltip: { backgroundColor: '#1a2438', borderColor: 'rgba(255,77,109,0.3)', borderWidth: 1 }
-      },
-      animation: { duration: 800, easing: 'easeOutQuart' }
-    }
-  });
-}
-
-/* ════════════════════════════════════════════
    FOOTER METRICS
 ════════════════════════════════════════════ */
 function renderFooter() {
@@ -1001,14 +916,12 @@ function updateClock() {
    INIT
 ════════════════════════════════════════════ */
 function renderAll() {
+  renderFooter();
   renderKPIs();
   renderFunnel();
   renderTable();
-  renderLossList();
   renderConsultantChart();
   renderTrendChart();
-  renderLossChart();
-  renderFooter();
 }
 
 updateClock();
@@ -1018,7 +931,6 @@ renderAll();
 // Simulate live updates every 30s
 setInterval(() => {
   const d = DATA[currentPeriod];
-  // tiny random drift
   Object.values(d.kpis).forEach(k => {
     const delta = Math.random() > 0.5 ? 1 : 0;
     if (typeof k.value === 'number') k.value += delta;
